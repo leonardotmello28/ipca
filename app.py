@@ -39,6 +39,18 @@ def process_ipca_data():
     # Formata a data para dd/mm/yyyy
     ipca['date'] = ipca['date'].dt.strftime('%d/%m/%Y')
     ipca['Mes-ano'] = pd.to_datetime(ipca['date'], format='%d/%m/%Y').dt.to_period('M').astype(str)
+    ipca['Indice Multiplicativo'] = 0.0
+
+# Calcula o comprimento do DataFrame
+n = len(ipca)
+
+# Atribui o último valor do índice multiplicativo como o fator correspondente
+ipca.iloc[n - 1, ipca.columns.get_loc('Indice Multiplicativo')] = ipca.iloc[n - 1, ipca.columns.get_loc('Fator')]
+
+# Calcula o índice multiplicativo de trás para frente
+for x in range(n - 2, -1, -1):
+    ipca.iloc[x, ipca.columns.get_loc('Indice Multiplicativo')] = ipca.iloc[x + 1, ipca.columns.get_loc('Indice Multiplicativo')] * ipca.iloc[x, ipca.columns.get_loc('Fator')]
+
     return ipca
 
 
@@ -54,7 +66,7 @@ class IPCAVarMensal(Resource):
         ipca_data = process_ipca_data()
 
         # Seleciona apenas as colunas necessárias
-        result = ipca_data[['variable', 'value', 'date', 'Mes-ano']].to_dict(orient="records")
+        result = ipca_data[['variable', 'value', 'date', 'Mes-ano', 'Indice Multiplicativo']].to_dict(orient="records")
         return jsonify(result)
 
 
