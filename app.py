@@ -56,7 +56,7 @@ def process_ipca_data():
         ipca.iloc[x, ipca.columns.get_loc('Indice Multiplicativo')] = (
             ipca.iloc[x + 1, ipca.columns.get_loc('Indice Multiplicativo')] * ipca.iloc[x, ipca.columns.get_loc('Fator')]
         )
-
+    ipca['Indice Multiplicativo'] = ipca['Indice Multiplicativo'].round(6)
     return ipca
 
 
