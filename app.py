@@ -37,7 +37,7 @@ def process_ipca_data():
             value=lambda x: x['value'].astype(float)
         )
         .pipe(lambda x: x.loc[x['variable'] == 'Var. mensal (%)'])  # Filtra apenas "Var. mensal (%)"
-        .pipe(lambda x: x.loc[x.date > '2010-01-01'])
+        .pipe(lambda x: x.loc[x.date > '2006-01-01'])
     )
 
     # Formata a data para dd/mm/yyyy
