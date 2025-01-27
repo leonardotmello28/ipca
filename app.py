@@ -19,6 +19,10 @@ def process_ipca_data():
         variable='63, 69, 2263, 2264, 2265'
     )
 
+    # Verifica se os dados foram retornados corretamente
+    if data is None or len(data) == 0:
+        raise ValueError("Dados não puderam ser obtidos da API do SIDRA.")
+
     # Processamento do DataFrame
     ipca = (
         data
@@ -37,19 +41,21 @@ def process_ipca_data():
     )
 
     # Formata a data para dd/mm/yyyy
-    ipca['date'] = ipca['date'].dt.strftime('%d/%m/%Y')
-    ipca['Mes-ano'] = pd.to_datetime(ipca['date'], format='%d/%m/%Y').dt.to_period('M').astype(str)
+    ipca['date_formatted'] = ipca['date'].dt.strftime('%d/%m/%Y')
+    ipca['Mes-ano'] = ipca['date'].dt.to_period('M').astype(str)
+
+    # Calcula o fator multiplicativo
+    ipca['Fator'] = 1 + (ipca['value'] / 100)
+
+    # Calcula o índice multiplicativo de trás para frente
     ipca['Indice Multiplicativo'] = 0.0
+    n = len(ipca)
+    ipca.iloc[n - 1, ipca.columns.get_loc('Indice Multiplicativo')] = ipca.iloc[n - 1, ipca.columns.get_loc('Fator')]
 
-# Calcula o comprimento do DataFrame
-n = len(ipca)
-
-# Atribui o último valor do índice multiplicativo como o fator correspondente
-ipca.iloc[n - 1, ipca.columns.get_loc('Indice Multiplicativo')] = ipca.iloc[n - 1, ipca.columns.get_loc('Fator')]
-
-# Calcula o índice multiplicativo de trás para frente
-for x in range(n - 2, -1, -1):
-    ipca.iloc[x, ipca.columns.get_loc('Indice Multiplicativo')] = ipca.iloc[x + 1, ipca.columns.get_loc('Indice Multiplicativo')] * ipca.iloc[x, ipca.columns.get_loc('Fator')]
+    for x in range(n - 2, -1, -1):
+        ipca.iloc[x, ipca.columns.get_loc('Indice Multiplicativo')] = (
+            ipca.iloc[x + 1, ipca.columns.get_loc('Indice Multiplicativo')] * ipca.iloc[x, ipca.columns.get_loc('Fator')]
+        )
 
     return ipca
 
@@ -66,7 +72,7 @@ class IPCAVarMensal(Resource):
         ipca_data = process_ipca_data()
 
         # Seleciona apenas as colunas necessárias
-        result = ipca_data[['variable', 'value', 'date', 'Mes-ano', 'Indice Multiplicativo']].to_dict(orient="records")
+        result = ipca_data[['variable', 'value', 'date_formatted', 'Mes-ano', 'Indice Multiplicativo']].to_dict(orient="records")
         return jsonify(result)
 
 
